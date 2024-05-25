@@ -1,1 +1,1 @@
-# strokeSmoothening
+# Stroke Smoothening using bezier curves
