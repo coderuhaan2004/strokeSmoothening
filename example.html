@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stroke Smoothing with Optimized Cubic Bezier Curves</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="600" height="400"></canvas>
+    <script>
+        var canvas = document.getElementById('myCanvas');
+        var context = canvas.getContext('2d');
+
+        var isDrawing = false;
+        var path = [];
+
+        canvas.addEventListener('mousedown', function(e) {
+            isDrawing = true;
+            path = [];
+            const rect = canvas.getBoundingClientRect();
+            path.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+            context.beginPath();
+            context.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        canvas.addEventListener('mousemove', function(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            path.push(point);
+            context.lineTo(point.x, point.y);
+            context.stroke();
+            //const simplifiedPath = simplifyPath(path, 4); // Adjust the tolerance as needed
+            //drawSmoothedPath(simplifiedPath);
+        });
+
+        canvas.addEventListener('mouseup', function(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            context.stroke();
+            context.beginPath();
+            const simplifiedPath = simplifyPath(path, 5); // Adjust the tolerance as needed
+            console.log(path);
+            console.log(simplifiedPath);
+            drawSmoothedPath(simplifiedPath);
+        });
+
+        // Ramer-Douglas-Peucker Algorithm
+        function simplifyPath(points, tolerance) {
+            if (points.length < 3) return points;
+
+            var firstPoint = points[0];
+            var lastPoint = points[points.length - 1];
+
+            var index = -1;
+            var maxDist = 0;
+
+            //Finding the maximum perpendicular distance of the point from the the line
+            for (var i = 1; i < points.length - 1; i++) {
+                var dist = perpendicularDistance(points[i], firstPoint, lastPoint);
+                if (dist > maxDist) {
+                    maxDist = dist;
+                    index = i;
+                }
+            }
+            //If the distance of the point from the line is greater than the tolerance, slice the array at this index.
+            if (maxDist > tolerance) {
+                var left = simplifyPath(points.slice(0, index + 1), tolerance);
+                var right = simplifyPath(points.slice(index), tolerance);
+                return left.slice(0, -1).concat(right);
+            } else {
+                return [firstPoint, lastPoint];
+            }
+        }
+
+        function perpendicularDistance(point, lineStart, lineEnd) {
+            // l: finding the magnitude of the line joining starting & ending points.
+            var dx = lineEnd.x - lineStart.x; 
+            var dy = lineEnd.y - lineStart.y;
+            var mag = Math.sqrt(dx * dx + dy * dy);
+            // unit vector
+            if (mag > 0) {
+                dx /= mag;
+                dy /= mag;
+            }
+            //l1: This is the line joining the point and starting point
+            var pvx = point.x - lineStart.x;
+            var pvy = point.y - lineStart.y;
+
+            //This is the component of l1 on l by taking the dot product 
+            var pvdot = dx * pvx + dy * pvy;
+
+            // ||l1 - l|| Which is the perpendicular distance between the line and the point
+            var ax = pvx - pvdot * dx;
+            var ay = pvy - pvdot * dy;
+            return Math.sqrt(ax * ax + ay * ay);
+        }
+
+        // Function to calculate control points for cubic Bezier curves
+        function calculateControlPoints(points) {
+            let beziers = [];
+            for (let i = 0; i < points.length - 1; i++) {
+                let p0 = points[i - 1] || points[i];
+                let p1 = points[i];
+                let p2 = points[i + 1];
+                let p3 = points[i + 2] || points[i + 1];
+
+                let dx1 = (p2.x - p0.x) / 6;
+                let dy1 = (p2.y - p0.y) / 6;
+                let dx2 = (p3.x - p1.x) / 6;
+                let dy2 = (p3.y - p1.y) / 6;
+
+                let cp1 = { x: p1.x + dx1, y: p1.y + dy1 };
+                let cp2 = { x: p2.x - dx2, y: p2.y - dy2 };
+
+                beziers.push({ start: p1, cp1: cp1, cp2: cp2, end: p2 });
+            }
+            return beziers;
+        }
+
+        function drawSmoothedPath(points) {
+            if (points.length < 2) return;
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.beginPath();
+
+            const beziers = calculateControlPoints(points);
+
+            for (let i = 0; i < beziers.length; i++) {
+                const b = beziers[i];
+                if (i === 0) context.moveTo(b.start.x, b.start.y);
+                context.bezierCurveTo(b.cp1.x, b.cp1.y, b.cp2.x, b.cp2.y, b.end.x, b.end.y);
+            }
+
+            context.strokeStyle = 'black';
+            context.lineWidth = 2;
+            context.stroke();
+
+           // points.forEach(drawPoint);
+        }
+    </script>
+</body>
+</html>
