@@ -1,5 +1,8 @@
 # Stroke Smoothening using bezier curves
 
+![Screenshot 2025-01-18 001937](https://github.com/user-attachments/assets/1a153708-f5d5-4ac6-8051-dd179161b45a)
+![Screenshot 2025-01-18 002000](https://github.com/user-attachments/assets/c7e1b011-ea81-4afa-86eb-d7adedf78e5d)
+
 ## How to use it
 Import all the files in one folder and run HTML file on your browser.
 
